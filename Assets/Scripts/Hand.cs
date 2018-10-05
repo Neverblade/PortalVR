@@ -5,31 +5,28 @@ using UnityEngine;
 public class Hand : MonoBehaviour {
 
     public static float TRIGGER_THRESHOLD = 0.95f;
-    public static string PORTAL_TAG = "Portal";
 
     public OVRInput.Controller controller;
 
+    [HideInInspector]
+    public GameObject heldObjectContender;
+
     private float triggerState;
-    private bool holdingObject;
     private GameObject heldObject;
 
     void Update() {
         triggerState = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, controller);
-        if (triggerState < TRIGGER_THRESHOLD && holdingObject) {
+        
+        if (triggerState > TRIGGER_THRESHOLD && heldObject == null) {
+            Grab(heldObjectContender);
+        }
+
+        if (triggerState < TRIGGER_THRESHOLD && heldObject != null) {
             Release(heldObject);
         }
     }
 
-    void OnTriggerStay(Collider other) {
-        if (other.transform.parent != null && other.transform.parent.CompareTag(PORTAL_TAG)) {
-            if (triggerState > TRIGGER_THRESHOLD && !holdingObject) {
-                Grab(other.transform.parent.gameObject);
-            }
-        }
-    }
-
     void Grab(GameObject obj) {
-        holdingObject = true;
         heldObject = obj;
         heldObject.transform.parent = this.transform;
     }
@@ -37,6 +34,5 @@ public class Hand : MonoBehaviour {
     void Release(GameObject obj) {
         heldObject.transform.parent = null;
         heldObject = null;
-        holdingObject = false;
     }
 }

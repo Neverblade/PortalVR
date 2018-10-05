@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PortalLogic : MonoBehaviour {
+public class Portal : MonoBehaviour {
 
     public static string surfaceName = "Portal Surface";
     public static string shaderName = "Custom/PortalShaderVR";

@@ -9,6 +9,8 @@ using UnityEngine;
 public class PortalDuplicator : MonoBehaviour {
 
     public static int DUPLICABLE_LAYER = 8;
+    public static int TRANSPARENT_RENDER_QUEUE = 2700;
+    public static int GEOMETRY_RENDER_QUEUE = 2000;
 
     public Detector detector;
 
@@ -28,6 +30,11 @@ public class PortalDuplicator : MonoBehaviour {
             && !dupeMapping.ContainsKey(obj) && !dupeMapping.ContainsValue(obj)
             && !mirrorDupeMapping.ContainsKey(obj) && !mirrorDupeMapping.ContainsValue(obj)
             && detector.detectedObjs.Contains(obj)) {
+
+            // Set the object to appear invisible w/ the cube
+            SetRenderQueue(obj, TRANSPARENT_RENDER_QUEUE);
+
+            // Duplicate the Object
             GameObject dupedObj = GameObject.Instantiate(obj);
             Duplicate dupeScript = dupedObj.AddComponent<Duplicate>();
             dupeScript.original = obj.transform;
@@ -42,8 +49,12 @@ public class PortalDuplicator : MonoBehaviour {
         GameObject obj = other.gameObject;
         GameObject dupedObj;
         if (detector.detectedObjs.Contains(obj) && dupeMapping.TryGetValue(obj, out dupedObj)) {
+            // Destroy duped version
             Destroy(dupedObj);
             dupeMapping.Remove(obj);
+
+            // Set back to normal render queue
+            SetRenderQueue(obj, GEOMETRY_RENDER_QUEUE);
         }
     }
 
@@ -53,5 +64,12 @@ public class PortalDuplicator : MonoBehaviour {
      */
     private bool IsSibling(Collider other) {
         return transform.parent == other.transform.parent;
+    }
+
+    private void SetRenderQueue(GameObject obj, int renderQueue) {
+        Material[] materials = obj.GetComponent<Renderer>().materials;
+        for (int i = 0; i < materials.Length; ++i) {
+            materials[i].renderQueue = renderQueue;
+        }
     }
 }

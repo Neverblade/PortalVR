@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR;
 
+[RequireComponent(typeof(PortalDuplicator))]
 public class Portal : MonoBehaviour {
 
     public static string shaderName = "Custom/PortalShaderVR";
+    public static string DOOR_CENTER_NAME = "Door Center";
     public static string leftTextureName = "_LeftTex";
     public static string rightTextureName = "_RightTex";
 
     public int TEXTURE_SIZE = 4096;
-    public Transform source, destination;
+    public GameObject mirrorPortalSurface;
 
+    [HideInInspector]
+    public Transform source, destination;
     private Camera portalCamera;
     private Material material;
     private RenderTexture leftTexture, rightTexture;
@@ -23,6 +27,10 @@ public class Portal : MonoBehaviour {
     public static Vector3 ToV3(Vector4 v) { return new Vector3(v.x, v.y, v.z); }
 
     void Start () {
+        // Set source and destination
+        source = transform.parent.Find(DOOR_CENTER_NAME);
+        destination = mirrorPortalSurface.transform.parent.Find(DOOR_CENTER_NAME);
+
         // Create material
         material = new Material(Shader.Find(shaderName));
         GetComponent<MeshRenderer>().materials = new Material[] { material };

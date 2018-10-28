@@ -16,24 +16,47 @@ public class Hand : MonoBehaviour {
     private List<GameObject> heldObjectContenders = new List<GameObject>();
 
     void Update() {
-        triggerState = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, controller);
-        
-        if (triggerState > TRIGGER_THRESHOLD && heldObject == null && heldObjectContenders.Count > 0) {
-            Grab(heldObjectContenders[heldObjectContenders.Count - 1]);
-        }
+        float newTriggerState = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, controller);
 
-        if (triggerState < TRIGGER_THRESHOLD && heldObject != null) {
+        if (triggerState <= TRIGGER_THRESHOLD
+            && newTriggerState > TRIGGER_THRESHOLD
+            && heldObject == null
+            && heldObjectContenders.Count > 0) {
+            Grab(heldObjectContenders[heldObjectContenders.Count - 1]);
+        } else if (triggerState < TRIGGER_THRESHOLD && heldObject != null) {
             Release(heldObject);
         }
+
+        triggerState = newTriggerState;
     }
 
     void Grab(GameObject obj) {
         heldObject = obj;
+
+        Rigidbody heldObjectRb = heldObject.GetComponent<Rigidbody>();
+        if (heldObjectRb != null) {
+            Rigidbody rb = GetComponent<Rigidbody>();
+            heldObjectRb.isKinematic = true;
+            heldObjectRb.useGravity = false;
+        }
+
         heldObject.transform.parent = this.transform;
     }
 
     void Release(GameObject obj) {
+        Transform parent = heldObject.transform.parent;
         heldObject.transform.parent = null;
+
+        Rigidbody heldObjectRb = heldObject.GetComponent<Rigidbody>();
+        if (heldObjectRb != null) {
+            Rigidbody rb = GetComponent<Rigidbody>();
+            heldObjectRb.isKinematic = false;
+            heldObjectRb.useGravity = true;
+            // TODO: Replace these two with generalized versions (track vel based off of previous timesteps).
+            heldObjectRb.velocity = OVRInput.GetLocalControllerVelocity(controller);
+            heldObjectRb.angularVelocity = OVRInput.GetLocalControllerAngularVelocity(controller);
+        }
+
         heldObject = null;
     }
 

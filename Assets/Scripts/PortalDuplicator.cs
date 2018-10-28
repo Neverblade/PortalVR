@@ -36,6 +36,9 @@ public class PortalDuplicator : MonoBehaviour {
 
             // Duplicate the Object
             GameObject dupedObj = GameObject.Instantiate(obj);
+            dupedObj.name = obj.name;
+
+            // Add Duplicate script
             Duplicate dupeScript = dupedObj.AddComponent<Duplicate>();
             dupeScript.original = obj.transform;
             dupeScript.source = portal.source;
@@ -48,13 +51,30 @@ public class PortalDuplicator : MonoBehaviour {
     private void OnTriggerExit(Collider other) {
         GameObject obj = other.gameObject;
         GameObject dupedObj;
-        if (detector.detectedObjs.Contains(obj) && dupeMapping.TryGetValue(obj, out dupedObj)) {
-            // Destroy duped version
-            Destroy(dupedObj);
+        if (dupeMapping.TryGetValue(obj, out dupedObj)) {
             dupeMapping.Remove(obj);
 
-            // Set back to normal render queue
-            SetRenderQueue(obj, GEOMETRY_RENDER_QUEUE);
+            if (detector.detectedObjs.Contains(obj)) { // Obj reversed back through the portal
+                Destroy(dupedObj);
+                SetRenderQueue(obj, GEOMETRY_RENDER_QUEUE);
+            } else { // Obj has passed through the portal
+                Destroy(dupedObj.GetComponent<Duplicate>());
+                SetRenderQueue(dupedObj, GEOMETRY_RENDER_QUEUE);
+
+                // Transfer rigidbody parameters from obj to dupedObj
+                Rigidbody dupedObjRb = dupedObj.GetComponent<Rigidbody>();
+                if (dupedObjRb != null) {
+                    Rigidbody objRb = obj.GetComponent<Rigidbody>();
+                    dupedObjRb.isKinematic = objRb.isKinematic;
+                    dupedObjRb.useGravity = objRb.useGravity;
+                    Vector3 localVelocity = obj.transform.InverseTransformVector(objRb.velocity);
+                    dupedObjRb.velocity = dupedObjRb.transform.TransformVector(localVelocity);
+                    Vector3 localAngularVelocity = obj.transform.InverseTransformVector(objRb.angularVelocity);
+                    dupedObjRb.angularVelocity = dupedObjRb.transform.TransformVector(localAngularVelocity);
+                }
+
+                Destroy(obj);
+            }
         }
     }
 
@@ -66,10 +86,25 @@ public class PortalDuplicator : MonoBehaviour {
         return transform.parent == other.transform.parent;
     }
 
+    /**
+     * Sets the render queue of an object's materials.
+     * If set to TRANSPARENT_RENDER_QUEUE, this will make the object invisible
+     * when blocked by a depth mask shader.
+     * If set to GEOMETRY_RENDER_QUEUE, it's a normal object.
+     * TODO: Set renderqueue to the (remembered) original value, not a preset one.
+     */
     private void SetRenderQueue(GameObject obj, int renderQueue) {
         Material[] materials = obj.GetComponent<Renderer>().materials;
         for (int i = 0; i < materials.Length; ++i) {
             materials[i].renderQueue = renderQueue;
         }
+    }
+
+    /**
+     * Looks at the given obj's chain of parents and returns the highest
+     * level obj that's marked as Duplicable. Returns null if none found.
+     */ 
+    private GameObject FindDuplicableObject(GameObject obj) {
+        return null;
     }
 }
